@@ -1,0 +1,17 @@
+hash: 9068aa784ed902918f370947ce793d08467625e0cfaf8366d245582f644a9783
+updated: 2016-07-07T12:53:03.2348925-04:00
+imports:
+- name: goji.io
+  version: e355964ac565b94cf0fc7f218346626529125086
+  subpackages:
+  - pat
+- name: golang.org/x/crypto
+  version: d81fdb778bf2c40a91b24519d60cdc5767318829
+- name: golang.org/x/net
+  version: 7864c9eef811cd4e2387a4d17eaf985e412b5032
+  subpackages:
+  - /context
+- name: golang.org/x/text
+  version: ce78b075c2fbd48520f4995b173eb9fe18b56ef3
+  repo: https://golang.org/x/text
+devImports: []
