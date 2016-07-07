@@ -1,0 +1,40 @@
+hash: 9cf9e606747dc33810beb7243ec6b109c92976561f47700164eaff13e9de7e5f
+updated: 2016-07-07T18:46:00.696592567-04:00
+imports:
+- name: github.com/golang/glog
+  version: 23def4e6c14b4da8ac2ed8007337bc5eb5007998
+- name: github.com/golang/protobuf
+  version: 3852dcfda249c2097355a6aabb199a28d97b30df
+  subpackages:
+  - /proto
+- name: github.com/googleapis/gax-go
+  version: 617a035dbedc98c90386b28e4972ca6a84fcfad7
+- name: github.com/googleapis/proto-client-go
+  version: a0c4bde3392924957a5104af9c0ab389e8520923
+- name: github.com/montanaflynn/stats
+  version: 60dcacf48f43d6dd654d0ed94120ff5806c5ca5c
+- name: github.com/skelterjohn/go.matrix
+  version: daa59528eefd43623a4c8e36373a86f9eef870a2
+- name: golang.org/x/crypto
+  version: d81fdb778bf2c40a91b24519d60cdc5767318829
+- name: golang.org/x/net
+  version: f841c39de738b1d0df95b5a7187744f0e03d8112
+  subpackages:
+  - /context
+- name: golang.org/x/oauth2
+  version: 7357e96168422ba1e6e7f21075713b72d58764e7
+- name: golang.org/x/text
+  version: ce78b075c2fbd48520f4995b173eb9fe18b56ef3
+- name: google.golang.org/api
+  version: c13a21ee847eca050f08db8373d8737494a1170e
+- name: google.golang.org/appengine
+  version: 267c27e7492265b84fc6719503b14a1e17975d79
+- name: google.golang.org/cloud
+  version: 00a2270cce0a73cdc800dcb7a5e5a2938b800ca8
+- name: google.golang.org/grpc
+  version: 4f14d195bf76d2b7e8c1bd379549b88ffe5f4ee3
+  subpackages:
+  - credentials
+  - examples/route_guide/routeguide
+  - grpclog
+devImports: []

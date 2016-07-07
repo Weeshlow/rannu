@@ -1,0 +1,15 @@
+package: github.com/unchartedsoftware/rannu/cluster
+import:
+- package: github.com/golang/protobuf
+  subpackages:
+  - /proto
+- package: golang.org/x/net
+  subpackages:
+  - /context
+- package: google.golang.org/grpc
+  subpackages:
+  - credentials
+  - examples/route_guide/routeguide
+  - grpclog
+- package: github.com/montanaflynn/stats
+- package: github.com/skelterjohn/go.matrix

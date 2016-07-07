@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package rannu;
+
+service Worker {
+    rpc RecordVectors(stream Vector) returns (Unit) {}
+
+    rpc GetMean(Unit) returns (Vector) {}
+
+    rpc GetScatterMatrix(Vector) returns (Matrix) {}
+}
+
+message Unit {}
+
+message Vector {
+    repeated double elements = 1 [packed=true];
+}
+
+message Matrix {
+    repeated Vector elements = 1;
+}
