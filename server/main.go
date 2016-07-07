@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -11,19 +10,13 @@ import (
 	"goji.io"
 
 	"goji.io/pat"
-	"golang.org/x/net/context"
 )
 
 var (
 	tmpl *template.Template
 	addr = flag.CommandLine.String("addr",
-		"localhost:8000", "<address>:<port> to bind HTTP server")
+		":7900", "<address>:<port> to bind HTTP server")
 )
-
-func hello(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	name := pat.Param(ctx, "name")
-	fmt.Fprintf(w, "Hello, %s!", name)
-}
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	err := tmpl.Execute(w, nil)
