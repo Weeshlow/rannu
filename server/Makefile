@@ -1,18 +1,21 @@
-version=0.2.0
-name=rannu
-vcs=github.com/unchartedsoftware/$(name)
+version=0.1.0
 
 .PHONY: all
 
-build: clean
+NOVENDOR := $(shell glide novendor)
+
+build: clean lint
 	@CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o ./bin/main .
 
 clean:
 	@rm -rf ./bin
 
 lint:
-	@go vet ./...
-	@golint ./...
+	@go vet $(NOVENDOR)
+	@go list ./... | grep -v /vendor/ | xargs -L1 golint
+
+test:
+	@go test $(NOVENDOR)
 
 docker: build
 	@docker build -t rannu:latest .
