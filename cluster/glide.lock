@@ -1,5 +1,5 @@
-hash: 9cf9e606747dc33810beb7243ec6b109c92976561f47700164eaff13e9de7e5f
-updated: 2016-07-07T18:46:00.696592567-04:00
+hash: 47d702cfc2891cf653ac801d8bd815644f6aa3e9cc72bd2e8bb62af5df788665
+updated: 2016-07-08T14:14:48.282056633-04:00
 imports:
 - name: github.com/golang/glog
   version: 23def4e6c14b4da8ac2ed8007337bc5eb5007998
@@ -13,6 +13,8 @@ imports:
   version: a0c4bde3392924957a5104af9c0ab389e8520923
 - name: github.com/montanaflynn/stats
   version: 60dcacf48f43d6dd654d0ed94120ff5806c5ca5c
+- name: github.com/oleiade/lane
+  version: e159f8a7d90225e17f86f0243371ccd29c65e61e
 - name: github.com/skelterjohn/go.matrix
   version: daa59528eefd43623a4c8e36373a86f9eef870a2
 - name: golang.org/x/crypto
@@ -30,9 +32,9 @@ imports:
 - name: google.golang.org/appengine
   version: 267c27e7492265b84fc6719503b14a1e17975d79
 - name: google.golang.org/cloud
-  version: 00a2270cce0a73cdc800dcb7a5e5a2938b800ca8
+  version: 83ee71d0fec26977bad1662134fa1e8c91268025
 - name: google.golang.org/grpc
-  version: 4f14d195bf76d2b7e8c1bd379549b88ffe5f4ee3
+  version: 461dac99975b211ed3eda7eb45b997d82da4345a
   subpackages:
   - credentials
   - examples/route_guide/routeguide

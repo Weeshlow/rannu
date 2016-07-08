@@ -13,3 +13,4 @@ import:
   - grpclog
 - package: github.com/montanaflynn/stats
 - package: github.com/skelterjohn/go.matrix
+- package: github.com/oleiade/lane
