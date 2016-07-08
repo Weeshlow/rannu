@@ -10,6 +10,8 @@ It is generated from these files:
 
 It has these top-level messages:
 	Unit
+	DataFile
+	Size
 	Vector
 	Matrix
 */
@@ -43,6 +45,25 @@ func (m *Unit) String() string            { return proto.CompactTextString(m) }
 func (*Unit) ProtoMessage()               {}
 func (*Unit) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
+type DataFile struct {
+	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+}
+
+func (m *DataFile) Reset()                    { *m = DataFile{} }
+func (m *DataFile) String() string            { return proto.CompactTextString(m) }
+func (*DataFile) ProtoMessage()               {}
+func (*DataFile) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+
+type Size struct {
+	Rows int32 `protobuf:"varint,1,opt,name=rows" json:"rows,omitempty"`
+	Cols int32 `protobuf:"varint,2,opt,name=cols" json:"cols,omitempty"`
+}
+
+func (m *Size) Reset()                    { *m = Size{} }
+func (m *Size) String() string            { return proto.CompactTextString(m) }
+func (*Size) ProtoMessage()               {}
+func (*Size) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+
 type Vector struct {
 	Elements []float64 `protobuf:"fixed64,1,rep,packed,name=elements" json:"elements,omitempty"`
 }
@@ -50,7 +71,7 @@ type Vector struct {
 func (m *Vector) Reset()                    { *m = Vector{} }
 func (m *Vector) String() string            { return proto.CompactTextString(m) }
 func (*Vector) ProtoMessage()               {}
-func (*Vector) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+func (*Vector) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
 
 type Matrix struct {
 	Elements []*Vector `protobuf:"bytes,1,rep,name=elements" json:"elements,omitempty"`
@@ -59,7 +80,7 @@ type Matrix struct {
 func (m *Matrix) Reset()                    { *m = Matrix{} }
 func (m *Matrix) String() string            { return proto.CompactTextString(m) }
 func (*Matrix) ProtoMessage()               {}
-func (*Matrix) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+func (*Matrix) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
 
 func (m *Matrix) GetElements() []*Vector {
 	if m != nil {
@@ -70,6 +91,8 @@ func (m *Matrix) GetElements() []*Vector {
 
 func init() {
 	proto.RegisterType((*Unit)(nil), "rannu.Unit")
+	proto.RegisterType((*DataFile)(nil), "rannu.DataFile")
+	proto.RegisterType((*Size)(nil), "rannu.Size")
 	proto.RegisterType((*Vector)(nil), "rannu.Vector")
 	proto.RegisterType((*Matrix)(nil), "rannu.Matrix")
 }
@@ -85,9 +108,10 @@ const _ = grpc.SupportPackageIsVersion3
 // Client API for Worker service
 
 type WorkerClient interface {
-	RecordVectors(ctx context.Context, opts ...grpc.CallOption) (Worker_RecordVectorsClient, error)
-	GetMean(ctx context.Context, in *Unit, opts ...grpc.CallOption) (*Vector, error)
+	LoadData(ctx context.Context, in *DataFile, opts ...grpc.CallOption) (*Size, error)
+	GetSum(ctx context.Context, in *Unit, opts ...grpc.CallOption) (*Vector, error)
 	GetScatterMatrix(ctx context.Context, in *Vector, opts ...grpc.CallOption) (*Matrix, error)
+	ComputeScores(ctx context.Context, in *Matrix, opts ...grpc.CallOption) (*Matrix, error)
 }
 
 type workerClient struct {
@@ -98,43 +122,18 @@ func NewWorkerClient(cc *grpc.ClientConn) WorkerClient {
 	return &workerClient{cc}
 }
 
-func (c *workerClient) RecordVectors(ctx context.Context, opts ...grpc.CallOption) (Worker_RecordVectorsClient, error) {
-	stream, err := grpc.NewClientStream(ctx, &_Worker_serviceDesc.Streams[0], c.cc, "/rannu.Worker/RecordVectors", opts...)
+func (c *workerClient) LoadData(ctx context.Context, in *DataFile, opts ...grpc.CallOption) (*Size, error) {
+	out := new(Size)
+	err := grpc.Invoke(ctx, "/rannu.Worker/LoadData", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &workerRecordVectorsClient{stream}
-	return x, nil
+	return out, nil
 }
 
-type Worker_RecordVectorsClient interface {
-	Send(*Vector) error
-	CloseAndRecv() (*Unit, error)
-	grpc.ClientStream
-}
-
-type workerRecordVectorsClient struct {
-	grpc.ClientStream
-}
-
-func (x *workerRecordVectorsClient) Send(m *Vector) error {
-	return x.ClientStream.SendMsg(m)
-}
-
-func (x *workerRecordVectorsClient) CloseAndRecv() (*Unit, error) {
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	m := new(Unit)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-func (c *workerClient) GetMean(ctx context.Context, in *Unit, opts ...grpc.CallOption) (*Vector, error) {
+func (c *workerClient) GetSum(ctx context.Context, in *Unit, opts ...grpc.CallOption) (*Vector, error) {
 	out := new(Vector)
-	err := grpc.Invoke(ctx, "/rannu.Worker/GetMean", in, out, c.cc, opts...)
+	err := grpc.Invoke(ctx, "/rannu.Worker/GetSum", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -150,58 +149,60 @@ func (c *workerClient) GetScatterMatrix(ctx context.Context, in *Vector, opts ..
 	return out, nil
 }
 
+func (c *workerClient) ComputeScores(ctx context.Context, in *Matrix, opts ...grpc.CallOption) (*Matrix, error) {
+	out := new(Matrix)
+	err := grpc.Invoke(ctx, "/rannu.Worker/ComputeScores", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for Worker service
 
 type WorkerServer interface {
-	RecordVectors(Worker_RecordVectorsServer) error
-	GetMean(context.Context, *Unit) (*Vector, error)
+	LoadData(context.Context, *DataFile) (*Size, error)
+	GetSum(context.Context, *Unit) (*Vector, error)
 	GetScatterMatrix(context.Context, *Vector) (*Matrix, error)
+	ComputeScores(context.Context, *Matrix) (*Matrix, error)
 }
 
 func RegisterWorkerServer(s *grpc.Server, srv WorkerServer) {
 	s.RegisterService(&_Worker_serviceDesc, srv)
 }
 
-func _Worker_RecordVectors_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(WorkerServer).RecordVectors(&workerRecordVectorsServer{stream})
-}
-
-type Worker_RecordVectorsServer interface {
-	SendAndClose(*Unit) error
-	Recv() (*Vector, error)
-	grpc.ServerStream
-}
-
-type workerRecordVectorsServer struct {
-	grpc.ServerStream
-}
-
-func (x *workerRecordVectorsServer) SendAndClose(m *Unit) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func (x *workerRecordVectorsServer) Recv() (*Vector, error) {
-	m := new(Vector)
-	if err := x.ServerStream.RecvMsg(m); err != nil {
+func _Worker_LoadData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DataFile)
+	if err := dec(in); err != nil {
 		return nil, err
 	}
-	return m, nil
+	if interceptor == nil {
+		return srv.(WorkerServer).LoadData(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rannu.Worker/LoadData",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WorkerServer).LoadData(ctx, req.(*DataFile))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _Worker_GetMean_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Worker_GetSum_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Unit)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(WorkerServer).GetMean(ctx, in)
+		return srv.(WorkerServer).GetSum(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/rannu.Worker/GetMean",
+		FullMethod: "/rannu.Worker/GetSum",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(WorkerServer).GetMean(ctx, req.(*Unit))
+		return srv.(WorkerServer).GetSum(ctx, req.(*Unit))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -224,43 +225,68 @@ func _Worker_GetScatterMatrix_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Worker_ComputeScores_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Matrix)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WorkerServer).ComputeScores(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rannu.Worker/ComputeScores",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WorkerServer).ComputeScores(ctx, req.(*Matrix))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Worker_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "rannu.Worker",
 	HandlerType: (*WorkerServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "GetMean",
-			Handler:    _Worker_GetMean_Handler,
+			MethodName: "LoadData",
+			Handler:    _Worker_LoadData_Handler,
+		},
+		{
+			MethodName: "GetSum",
+			Handler:    _Worker_GetSum_Handler,
 		},
 		{
 			MethodName: "GetScatterMatrix",
 			Handler:    _Worker_GetScatterMatrix_Handler,
 		},
-	},
-	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "RecordVectors",
-			Handler:       _Worker_RecordVectors_Handler,
-			ClientStreams: true,
+			MethodName: "ComputeScores",
+			Handler:    _Worker_ComputeScores_Handler,
 		},
 	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: fileDescriptor0,
 }
 
 func init() { proto.RegisterFile("rannu.proto", fileDescriptor0) }
 
 var fileDescriptor0 = []byte{
-	// 192 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xe2, 0xe2, 0x2e, 0x4a, 0xcc, 0xcb,
-	0x2b, 0xd5, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x05, 0x73, 0x94, 0xd8, 0xb8, 0x58, 0x42,
-	0xf3, 0x32, 0x4b, 0x94, 0x34, 0xb8, 0xd8, 0xc2, 0x52, 0x93, 0x4b, 0xf2, 0x8b, 0x84, 0xe4, 0xb8,
-	0x38, 0x52, 0x73, 0x52, 0x73, 0x53, 0xf3, 0x4a, 0x8a, 0x25, 0x18, 0x15, 0x98, 0x35, 0x18, 0x9d,
-	0x98, 0x04, 0x18, 0x83, 0xe0, 0x62, 0x4a, 0xc6, 0x5c, 0x6c, 0xbe, 0x89, 0x25, 0x45, 0x99, 0x15,
-	0x42, 0x9a, 0x68, 0x2a, 0xb9, 0x8d, 0x78, 0xf5, 0x20, 0x56, 0x40, 0x8c, 0x42, 0x68, 0x32, 0x9a,
-	0xc6, 0xc8, 0xc5, 0x16, 0x9e, 0x5f, 0x94, 0x9d, 0x5a, 0x24, 0xa4, 0xcf, 0xc5, 0x1b, 0x94, 0x9a,
-	0x9c, 0x5f, 0x94, 0x02, 0x51, 0x54, 0x2c, 0x84, 0xaa, 0x49, 0x8a, 0x1b, 0xca, 0x05, 0x3b, 0x8b,
-	0x41, 0x83, 0x51, 0x48, 0x9d, 0x8b, 0xdd, 0x3d, 0xb5, 0xc4, 0x37, 0x35, 0x31, 0x4f, 0x08, 0x59,
-	0x4e, 0x0a, 0x55, 0x9f, 0x12, 0x83, 0x90, 0x11, 0x97, 0x00, 0x50, 0x61, 0x70, 0x72, 0x62, 0x49,
-	0x49, 0x6a, 0x11, 0xd4, 0x8d, 0x68, 0x86, 0xc3, 0xb8, 0x10, 0x59, 0x25, 0x86, 0x24, 0x36, 0x70,
-	0x68, 0x18, 0x03, 0x02, 0x00, 0x00, 0xff, 0xff, 0x33, 0x8b, 0x99, 0x4c, 0x1c, 0x01, 0x00, 0x00,
+	// 262 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x64, 0x91, 0xc1, 0x4e, 0xf3, 0x30,
+	0x10, 0x84, 0x7f, 0xf7, 0x4f, 0xad, 0xb2, 0x51, 0x45, 0xb5, 0xa7, 0xaa, 0x07, 0x84, 0x7c, 0x40,
+	0x81, 0x43, 0x90, 0xd2, 0x37, 0x00, 0x04, 0x17, 0xb8, 0x24, 0x02, 0xce, 0x26, 0xec, 0x21, 0x22,
+	0xb1, 0x2b, 0x67, 0x23, 0x10, 0x6f, 0xc7, 0x9b, 0x11, 0x3b, 0x69, 0x51, 0xe0, 0xb6, 0x99, 0xf9,
+	0x66, 0x33, 0x2b, 0x43, 0xec, 0xb4, 0x31, 0x5d, 0xba, 0x73, 0x96, 0x2d, 0xce, 0xc3, 0x87, 0x92,
+	0x10, 0x3d, 0x9a, 0x8a, 0xd5, 0x09, 0x2c, 0x6e, 0x34, 0xeb, 0xdb, 0xaa, 0x26, 0x44, 0x88, 0x8c,
+	0x6e, 0x68, 0x2d, 0x4e, 0x45, 0x72, 0x94, 0x87, 0x59, 0xa5, 0x10, 0x15, 0xd5, 0x67, 0xf0, 0x9c,
+	0x7d, 0x6f, 0x83, 0x37, 0xcf, 0xc3, 0xec, 0xb5, 0xd2, 0xd6, 0xed, 0x7a, 0x36, 0x68, 0x7e, 0x56,
+	0x09, 0xc8, 0x27, 0x2a, 0xd9, 0x3a, 0xec, 0x37, 0x53, 0x4d, 0x0d, 0x19, 0xf6, 0xa9, 0xff, 0x89,
+	0xb8, 0x9a, 0xad, 0x44, 0x7e, 0xd0, 0xd4, 0x16, 0xe4, 0x83, 0x66, 0x57, 0x7d, 0xe0, 0xf9, 0x2f,
+	0x32, 0xce, 0x96, 0xe9, 0x50, 0x79, 0x58, 0xf5, 0x13, 0xca, 0xbe, 0x04, 0xc8, 0x67, 0xeb, 0xde,
+	0xc8, 0xe1, 0x05, 0x2c, 0xee, 0xad, 0x7e, 0xf5, 0xed, 0xf1, 0x78, 0xe4, 0xf7, 0xa7, 0x6c, 0xe2,
+	0x51, 0xf0, 0xdd, 0xd5, 0x3f, 0x3c, 0x03, 0x79, 0x47, 0x5c, 0x74, 0x0d, 0xee, 0x0d, 0x7f, 0xfc,
+	0x66, 0xfa, 0x9b, 0x9e, 0xcb, 0x60, 0xe5, 0xb9, 0x52, 0x33, 0x93, 0x1b, 0xdb, 0x4d, 0xa1, 0x43,
+	0x66, 0x70, 0xfb, 0xcc, 0x25, 0x2c, 0xaf, 0x6d, 0xb3, 0xeb, 0x98, 0x8a, 0xd2, 0x3a, 0x6a, 0x71,
+	0x4a, 0xfc, 0x09, 0xbc, 0xc8, 0xf0, 0x10, 0xdb, 0xef, 0x00, 0x00, 0x00, 0xff, 0xff, 0x85, 0xaa,
+	0xea, 0x3e, 0x97, 0x01, 0x00, 0x00,
 }

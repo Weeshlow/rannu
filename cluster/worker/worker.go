@@ -1,9 +1,18 @@
 package main
 
 import (
+	"bufio"
+	"encoding/csv"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
+	"net"
+	"os"
+	"strconv"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/grpclog"
 
 	"golang.org/x/net/context"
 
@@ -12,50 +21,77 @@ import (
 	pb "github.com/unchartedsoftware/rannu/cluster/rannu"
 )
 
+var (
+	port = flag.Int("port", 10000, "The server port")
+)
+
 type workerServer struct {
 	matrix *matrix.DenseMatrix
 }
 
-func (w *workerServer) RecordVectors(stream pb.Worker_RecordVectorsServer) error {
-	size := 0
+func (w *workerServer) LoadData(ctx context.Context, file *pb.DataFile) (*pb.Size, error) {
+	cols := 0
 	vectors := [][]float64{}
 
+	f, err := os.Open(file.Name)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	r := csv.NewReader(bufio.NewReader(f))
 	for {
-		vector, err := stream.Recv()
+		row, err := r.Read()
 		if err == io.EOF {
-			return stream.SendAndClose(&pb.Unit{})
+			break
 		}
-		if err != nil {
-			return err
+
+		num := len(row)
+		if cols == 0 {
+			cols = num
+		} else if num != cols {
+			return nil, errors.New("Inconsistent vector sizes")
 		}
-		if size == 0 {
-			size = len(vector.Elements)
-		} else if len(vector.Elements) != size {
-			return errors.New("Inconsistent vector sizes")
+
+		vector := make([]float64, num)
+		for i := range vector {
+			vector[i], err = strconv.ParseFloat(row[i], 64)
+			if err != nil {
+				return nil, err
+			}
 		}
-		vectors = append(vectors, vector.Elements)
+
+		vectors = append(vectors, vector)
 	}
 
 	w.matrix = matrix.MakeDenseMatrixStacked(vectors)
+	fmt.Println("initial", w.matrix)
 
-	return nil
+	size := &pb.Size{
+		Rows: int32(len(vectors)),
+		Cols: int32(cols),
+	}
+	return size, nil
 }
 
-func (w *workerServer) GetMean(ctx context.Context, _ *pb.Unit) (*pb.Vector, error) {
-	mean := &pb.Vector{
+func (w *workerServer) GetSum(ctx context.Context, unit *pb.Unit) (*pb.Vector, error) {
+	if w.matrix == nil {
+		return nil, errors.New("No matrix available")
+	}
+	sum := &pb.Vector{
 		Elements: make([]float64, w.matrix.Cols()),
 	}
 
 	var err error
-	for i := range mean.Elements {
+	for i := range sum.Elements {
 		col := w.matrix.GetColVector(i).Transpose()
-		mean.Elements[i], err = stats.Mean(col.Array())
+		sum.Elements[i], err = stats.Sum(col.Array())
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	return mean, nil
+	return sum, nil
 }
 
 func (w *workerServer) GetScatterMatrix(ctx context.Context, mean *pb.Vector) (*pb.Matrix, error) {
@@ -67,11 +103,13 @@ func (w *workerServer) GetScatterMatrix(ctx context.Context, mean *pb.Vector) (*
 	}
 
 	meanMatrix := matrix.MakeDenseMatrixStacked(rows)
+	fmt.Println("mean", meanMatrix)
 
 	err := w.matrix.SubtractDense(meanMatrix)
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("centered", w.matrix)
 
 	scatter := matrix.Zeros(numCols, numCols)
 
@@ -87,6 +125,7 @@ func (w *workerServer) GetScatterMatrix(ctx context.Context, mean *pb.Vector) (*
 			return nil, err
 		}
 	}
+	fmt.Println("scatter", scatter)
 
 	vectors := make([]*pb.Vector, numCols)
 	for i := 0; i < numCols; i++ {
@@ -102,18 +141,39 @@ func (w *workerServer) GetScatterMatrix(ctx context.Context, mean *pb.Vector) (*
 	return mat, nil
 }
 
-func main() {
-	w := &workerServer{}
-	w.matrix = matrix.MakeDenseMatrixStacked([][]float64{
-		[]float64{1, 2, 3},
-		[]float64{3, 6, 9},
-		[]float64{2, 4, 6},
-	})
-	fmt.Println(w.matrix)
-	mean, err := w.GetMean(nil, nil)
-	if err != nil {
-		panic(err)
+func (w *workerServer) ComputeScores(ctx context.Context, top *pb.Matrix) (*pb.Matrix, error) {
+	k := len(top.Elements)
+	topVectors := make([][]float64, k)
+	for i := range topVectors {
+		topVectors[i] = top.Elements[i].Elements
 	}
-	fmt.Println(mean)
-	fmt.Println(w.GetScatterMatrix(nil, mean))
+	p := matrix.MakeDenseMatrixStacked(topVectors)
+
+	vectors := make([]*pb.Vector, w.matrix.Rows())
+	for i := range vectors {
+		vector, err := p.TimesDense(w.matrix.GetRowVector(i).Transpose())
+		if err != nil {
+			return nil, err
+		}
+		vectors[i] = &pb.Vector{
+			Elements: vector.Transpose().Array(),
+		}
+	}
+
+	return &pb.Matrix{Elements: vectors}, nil
+}
+
+func main() {
+	flag.Parse()
+
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *port))
+	if err != nil {
+		grpclog.Fatalf("Failed to listen: %v", err)
+	}
+
+	grpcServer := grpc.NewServer()
+	pb.RegisterWorkerServer(grpcServer, new(workerServer))
+
+	grpclog.Printf("Listening on %d", *port)
+	grpcServer.Serve(lis)
 }

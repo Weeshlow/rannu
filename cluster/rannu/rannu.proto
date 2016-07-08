@@ -3,14 +3,25 @@ syntax = "proto3";
 package rannu;
 
 service Worker {
-    rpc RecordVectors(stream Vector) returns (Unit) {}
+    rpc LoadData(DataFile) returns (Size) {}
 
-    rpc GetMean(Unit) returns (Vector) {}
+    rpc GetSum(Unit) returns (Vector) {}
 
     rpc GetScatterMatrix(Vector) returns (Matrix) {}
+
+    rpc ComputeScores(Matrix) returns (Matrix) {}
 }
 
 message Unit {}
+
+message DataFile {
+    string name = 1;
+}
+
+message Size {
+    int32 rows = 1;
+    int32 cols = 2;
+}
 
 message Vector {
     repeated double elements = 1 [packed=true];
