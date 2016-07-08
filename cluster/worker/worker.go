@@ -26,10 +26,14 @@ var (
 )
 
 type workerServer struct {
-	matrix *matrix.DenseMatrix
+	filename string
+	matrix   *matrix.DenseMatrix
 }
 
 func (w *workerServer) LoadData(ctx context.Context, file *pb.DataFile) (*pb.Size, error) {
+	grpclog.Printf("Processed %s...", file.Name)
+	w.filename = file.Name
+
 	cols := 0
 	vectors := [][]float64{}
 
@@ -65,7 +69,7 @@ func (w *workerServer) LoadData(ctx context.Context, file *pb.DataFile) (*pb.Siz
 	}
 
 	w.matrix = matrix.MakeDenseMatrixStacked(vectors)
-	fmt.Println("initial", w.matrix)
+	grpclog.Printf("Processed %d x %d matrix", len(vectors), cols)
 
 	size := &pb.Size{
 		Rows: int32(len(vectors)),
@@ -103,13 +107,11 @@ func (w *workerServer) GetScatterMatrix(ctx context.Context, mean *pb.Vector) (*
 	}
 
 	meanMatrix := matrix.MakeDenseMatrixStacked(rows)
-	fmt.Println("mean", meanMatrix)
 
 	err := w.matrix.SubtractDense(meanMatrix)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("centered", w.matrix)
 
 	scatter := matrix.Zeros(numCols, numCols)
 
@@ -125,7 +127,6 @@ func (w *workerServer) GetScatterMatrix(ctx context.Context, mean *pb.Vector) (*
 			return nil, err
 		}
 	}
-	fmt.Println("scatter", scatter)
 
 	vectors := make([]*pb.Vector, numCols)
 	for i := 0; i < numCols; i++ {
@@ -141,7 +142,7 @@ func (w *workerServer) GetScatterMatrix(ctx context.Context, mean *pb.Vector) (*
 	return mat, nil
 }
 
-func (w *workerServer) ComputeScores(ctx context.Context, top *pb.Matrix) (*pb.Matrix, error) {
+func (w *workerServer) ComputeScores(ctx context.Context, top *pb.Matrix) (*pb.DataFile, error) {
 	k := len(top.Elements)
 	topVectors := make([][]float64, k)
 	for i := range topVectors {
@@ -149,18 +150,71 @@ func (w *workerServer) ComputeScores(ctx context.Context, top *pb.Matrix) (*pb.M
 	}
 	p := matrix.MakeDenseMatrixStacked(topVectors)
 
-	vectors := make([]*pb.Vector, w.matrix.Rows())
+	vectors := make([][]float64, w.matrix.Rows())
 	for i := range vectors {
 		vector, err := p.TimesDense(w.matrix.GetRowVector(i).Transpose())
 		if err != nil {
 			return nil, err
 		}
-		vectors[i] = &pb.Vector{
-			Elements: vector.Transpose().Array(),
-		}
+		vectors[i] = vector.Transpose().Array()
 	}
 
-	return &pb.Matrix{Elements: vectors}, nil
+	in, err := os.Open(fmt.Sprintf("answers-%s", w.filename))
+	if err != nil {
+		return nil, err
+	}
+	defer in.Close()
+
+	answers := []float64{}
+	r := csv.NewReader(bufio.NewReader(in))
+	for {
+		row, err := r.Read()
+		if err == io.EOF {
+			break
+		}
+
+		if len(row) != 1 {
+			return nil, errors.New("Inconsistent answer vector size")
+		}
+
+		answer, err := strconv.ParseFloat(row[0], 64)
+		if err != nil {
+			return nil, err
+		}
+
+		answers = append(answers, answer)
+	}
+
+	if len(answers) != len(vectors) {
+		return nil, errors.New("Inconsistent answer and vector sizes")
+	}
+
+	filename := fmt.Sprintf("projected-%s", w.filename)
+	out, err := os.Create(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer out.Close()
+
+	var values []string
+	wr := csv.NewWriter(out)
+	for i := range answers {
+		vectors[i] = append(vectors[i], answers[i])
+
+		values = []string{}
+		for _, value := range vectors[i] {
+			values = append(values, strconv.FormatFloat(value, 'E', -1, 32))
+		}
+		if err = wr.Write(values); err != nil {
+			return nil, err
+		}
+	}
+	wr.Flush()
+	if err = wr.Error(); err != nil {
+		return nil, err
+	}
+
+	return &pb.DataFile{Name: filename}, nil
 }
 
 func main() {

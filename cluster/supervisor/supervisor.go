@@ -16,7 +16,9 @@ import (
 var (
 	host       = flag.String("addr", "127.0.0.1", "Host IP")
 	basePort   = flag.Int("base-port", 10000, "Base worker port")
-	numWorkers = flag.Int("workers", 2, "Number of workers")
+	numWorkers = flag.Int("workers", 1, "Number of workers")
+	filePrefix = flag.String("file-prefix", "credit-card", "File prefix")
+	save       = flag.Bool("save", false, "Save projection")
 )
 
 func main() {
@@ -43,7 +45,7 @@ func main() {
 	var rows, cols int
 	for i := range clients {
 		dataFile := &pb.DataFile{
-			Name: fmt.Sprintf("%d.csv", i+1),
+			Name: fmt.Sprintf("%s-%d-%d.csv", *filePrefix, *numWorkers, i+1),
 		}
 		size, err := clients[i].LoadData(context.Background(), dataFile)
 		if err != nil {
@@ -66,7 +68,6 @@ func main() {
 		subSum := matrix.MakeDenseMatrixStacked([][]float64{subVector.Elements})
 		sum.Add(subSum)
 	}
-	fmt.Println("sum", sum)
 	sumArray := sum.Array()
 	for i := range sumArray {
 		sumArray[i] /= float64(rows)
@@ -91,15 +92,11 @@ func main() {
 			grpclog.Fatalf("Failed to add matrices")
 		}
 	}
-	fmt.Println("scatter", scatter)
 
 	eigenvectors, eigenvalues, err := scatter.Eigen()
 	if err != nil {
 		grpclog.Fatalf("Failed to compute Eigen(): %v", err)
 	}
-	fmt.Println("values", eigenvalues.DiagonalCopy())
-	fmt.Println("vectors", eigenvectors)
-	fmt.Println("vectors T", eigenvectors.Transpose())
 
 	topValues := []float64{-math.MaxFloat64, -math.MaxFloat64}
 	topVectors := make([]*matrix.DenseMatrix, 2)
@@ -120,19 +117,19 @@ func main() {
 	fmt.Println("top 1", topValues[0], topVectors[0])
 	fmt.Println("top 2", topValues[1], topVectors[1])
 
-	top := &pb.Matrix{
-		Elements: []*pb.Vector{
-			&pb.Vector{Elements: topVectors[0].Array()},
-			&pb.Vector{Elements: topVectors[1].Array()},
-		},
-	}
-	for i := range clients {
-		z, err := clients[i].ComputeScores(context.Background(), top)
-		if err != nil {
-			grpclog.Fatalf("%v.ComputeScores() got error %v", clients[i], err)
+	if *save {
+		top := &pb.Matrix{
+			Elements: []*pb.Vector{
+				&pb.Vector{Elements: topVectors[0].Array()},
+				&pb.Vector{Elements: topVectors[1].Array()},
+			},
 		}
-		for j := range z.Elements {
-			fmt.Println(z.Elements[j].Elements)
+		for i := range clients {
+			z, err := clients[i].ComputeScores(context.Background(), top)
+			if err != nil {
+				grpclog.Fatalf("%v.ComputeScores() got error %v", clients[i], err)
+			}
+			fmt.Println(z.Name)
 		}
 	}
 }

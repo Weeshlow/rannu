@@ -9,7 +9,7 @@ service Worker {
 
     rpc GetScatterMatrix(Vector) returns (Matrix) {}
 
-    rpc ComputeScores(Matrix) returns (Matrix) {}
+    rpc ComputeScores(Matrix) returns (DataFile) {}
 }
 
 message Unit {}
