@@ -31,7 +31,7 @@ type workerServer struct {
 }
 
 func (w *workerServer) LoadData(ctx context.Context, file *pb.DataFile) (*pb.Size, error) {
-	grpclog.Printf("Processed %s...", file.Name)
+	grpclog.Printf("Processing %s...", file.Name)
 	w.filename = file.Name
 
 	cols := 0
