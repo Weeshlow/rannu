@@ -3,14 +3,12 @@ import:
 - package: github.com/golang/protobuf
   subpackages:
   - /proto
+- package: github.com/montanaflynn/stats
+- package: github.com/oleiade/lane
+- package: github.com/skelterjohn/go.matrix
 - package: golang.org/x/net
   subpackages:
   - /context
 - package: google.golang.org/grpc
   subpackages:
-  - credentials
-  - examples/route_guide/routeguide
   - grpclog
-- package: github.com/montanaflynn/stats
-- package: github.com/skelterjohn/go.matrix
-- package: github.com/oleiade/lane

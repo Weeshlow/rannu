@@ -12,6 +12,7 @@ import (
 
 var jobc = make(chan *q.Job)
 
+// New return an multiplexer for API endpoints
 func New() http.Handler {
 	q.Listen(jobc)
 

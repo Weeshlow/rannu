@@ -1,16 +1,19 @@
-hash: 47d702cfc2891cf653ac801d8bd815644f6aa3e9cc72bd2e8bb62af5df788665
-updated: 2016-07-08T14:14:48.282056633-04:00
+hash: 783fcb4aa53dae2c3c03d1653a43aa78f734ecf4a0afc144fd5989ceff7c2358
+updated: 2016-07-08T16:53:39.437734304-04:00
 imports:
 - name: github.com/golang/glog
   version: 23def4e6c14b4da8ac2ed8007337bc5eb5007998
+  repo: https://github.com/golang/glog
 - name: github.com/golang/protobuf
   version: 3852dcfda249c2097355a6aabb199a28d97b30df
   subpackages:
   - /proto
 - name: github.com/googleapis/gax-go
   version: 617a035dbedc98c90386b28e4972ca6a84fcfad7
+  repo: https://github.com/googleapis/gax-go
 - name: github.com/googleapis/proto-client-go
   version: a0c4bde3392924957a5104af9c0ab389e8520923
+  repo: https://github.com/googleapis/proto-client-go
 - name: github.com/montanaflynn/stats
   version: 60dcacf48f43d6dd654d0ed94120ff5806c5ca5c
 - name: github.com/oleiade/lane
@@ -25,18 +28,21 @@ imports:
   - /context
 - name: golang.org/x/oauth2
   version: 7357e96168422ba1e6e7f21075713b72d58764e7
+  repo: https://golang.org/x/oauth2
 - name: golang.org/x/text
   version: ce78b075c2fbd48520f4995b173eb9fe18b56ef3
+  repo: https://golang.org/x/text
 - name: google.golang.org/api
   version: c13a21ee847eca050f08db8373d8737494a1170e
+  repo: https://google.golang.org/api
 - name: google.golang.org/appengine
   version: 267c27e7492265b84fc6719503b14a1e17975d79
+  repo: https://google.golang.org/appengine
 - name: google.golang.org/cloud
   version: 83ee71d0fec26977bad1662134fa1e8c91268025
+  repo: https://google.golang.org/cloud
 - name: google.golang.org/grpc
   version: 461dac99975b211ed3eda7eb45b997d82da4345a
   subpackages:
-  - credentials
-  - examples/route_guide/routeguide
   - grpclog
 devImports: []

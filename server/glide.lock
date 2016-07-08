@@ -1,6 +1,30 @@
-hash: 9068aa784ed902918f370947ce793d08467625e0cfaf8366d245582f644a9783
-updated: 2016-07-07T12:53:03.2348925-04:00
+hash: 52ca32524eb01b68f10e95b057f56fbf06d8f669c58dc548d86ecd90b284a71e
+updated: 2016-07-08T16:52:38.330887003-04:00
 imports:
+- name: github.com/golang/glog
+  version: 23def4e6c14b4da8ac2ed8007337bc5eb5007998
+  repo: https://github.com/golang/glog
+- name: github.com/golang/protobuf
+  version: 3852dcfda249c2097355a6aabb199a28d97b30df
+- name: github.com/googleapis/gax-go
+  version: 617a035dbedc98c90386b28e4972ca6a84fcfad7
+  repo: https://github.com/googleapis/gax-go
+- name: github.com/googleapis/proto-client-go
+  version: a0c4bde3392924957a5104af9c0ab389e8520923
+  repo: https://github.com/googleapis/proto-client-go
+- name: github.com/montanaflynn/stats
+  version: 60dcacf48f43d6dd654d0ed94120ff5806c5ca5c
+  repo: https://github.com/montanaflynn/stats
+- name: github.com/oleiade/lane
+  version: e159f8a7d90225e17f86f0243371ccd29c65e61e
+  repo: https://github.com/oleiade/lane
+- name: github.com/skelterjohn/go.matrix
+  version: daa59528eefd43623a4c8e36373a86f9eef870a2
+  repo: https://github.com/skelterjohn/go.matrix
+- name: github.com/unchartedsoftware/rannu
+  version: 9bb8bd33ae0d369e6d5120eacd0f18ab0cc78d8b
+  subpackages:
+  - /cluster/queue
 - name: goji.io
   version: e355964ac565b94cf0fc7f218346626529125086
   subpackages:
@@ -8,10 +32,24 @@ imports:
 - name: golang.org/x/crypto
   version: d81fdb778bf2c40a91b24519d60cdc5767318829
 - name: golang.org/x/net
-  version: 7864c9eef811cd4e2387a4d17eaf985e412b5032
+  version: f841c39de738b1d0df95b5a7187744f0e03d8112
   subpackages:
   - /context
+- name: golang.org/x/oauth2
+  version: 7357e96168422ba1e6e7f21075713b72d58764e7
+  repo: https://golang.org/x/oauth2
 - name: golang.org/x/text
   version: ce78b075c2fbd48520f4995b173eb9fe18b56ef3
   repo: https://golang.org/x/text
+- name: google.golang.org/api
+  version: c13a21ee847eca050f08db8373d8737494a1170e
+  repo: https://google.golang.org/api
+- name: google.golang.org/appengine
+  version: 267c27e7492265b84fc6719503b14a1e17975d79
+  repo: https://google.golang.org/appengine
+- name: google.golang.org/cloud
+  version: 83ee71d0fec26977bad1662134fa1e8c91268025
+  repo: https://google.golang.org/cloud
+- name: google.golang.org/grpc
+  version: 461dac99975b211ed3eda7eb45b997d82da4345a
 devImports: []
