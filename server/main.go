@@ -10,6 +10,8 @@ import (
 	"goji.io"
 
 	"goji.io/pat"
+
+	"github.com/unchartedsoftware/rannu/server/api"
 )
 
 var (
@@ -39,6 +41,10 @@ func main() {
 
 	mux := goji.NewMux()
 	mux.HandleFunc(pat.Get("/"), indexHandler)
+
+	apiMux := api.New()
+	mux.Handle(pat.Get("/api/*"), apiMux)
+
 	mux.Handle(pat.Get("/*"), http.FileServer(http.Dir("assets")))
 
 	log.Printf("Rannu server listening on %s", *addr)

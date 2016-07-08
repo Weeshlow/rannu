@@ -5,14 +5,71 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>Rannu</title>
+    <title>Project Rannu</title>
 
     <link rel="stylesheet" href="css/bulma.css">
+    <link rel="stylesheet" href="css/styles.css">
   </head>
   <body>
     <div class="container">
-      <h1 class="title">Rannu</h1>
+      <h1 class="title is-2">Project Rannu</h1>
+      <h1 class="title is-3">Distributed Go-based Machine Learning on Kubernetes</h1>
+
+      <div class="control is-horizontal">
+        <div class="control is-grouped">
+          <div class="control">
+            <label class="label">Dataset</label>
+            <p class="control">
+              <span class="select">
+                <select id="dataset">
+                  <option value="">Select an option</option>
+                  <option value="credit-card">Credit Card Defaults</option>
+                </select>
+              </span>
+            </p>
+          </div>
+          <div class="control">
+            <label class="label">Number of Workers</label>
+            <p class="control">
+              <span class="select">
+                <select id="workers">
+                  <option value="">Select an option</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="4">4</option>
+                  <option value="8">8</option>
+                </select>
+              </span>
+            </p>
+            </div>
+            <div class="control">
+              <label class="label">&nbsp;</label>
+              <button id="submit" class="button is-primary">Compute PCA</button>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <h2 id="title" class="title is-3"></h2>
+      <div id="results"></div>
+      <div id="chart">
+        <div id="loading" class="sk-folding-cube">
+          <div class="sk-cube1 sk-cube"></div>
+          <div class="sk-cube2 sk-cube"></div>
+          <div class="sk-cube4 sk-cube"></div>
+          <div class="sk-cube3 sk-cube"></div>
+        </div>
+        <div id="scatter"></div>
+      </div>
+
+      <footer class="footer" id="credit-card-footer">
+        <p>Credit card data courtesy of: Yeh, I. C., &amp; Lien, C. H. (2009). The comparisons of data mining techniques for the predictive accuracy of probability of default of credit card clients. Expert Systems with Applications, 36(2), 2473-2480. <a href="http://archive.ics.uci.edu/ml/datasets/default+of+credit+card+clients" target="_blank">UCI Machine Learning Repository</a></p>
+      </footer>
     </div>
+
+    <script src="https://code.jquery.com/jquery-3.1.0.min.js" integrity="sha256-cCueBR6CsyA4/9szpPfrX3s49M9vUU5BgtiJj06wt/s=" crossorigin="anonymous"></script>
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+    <script src="js/scatter.js"></script>
+    <script src="js/main.js"></script>
   </body>
 </html>
-
