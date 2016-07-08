@@ -14,14 +14,20 @@
   shape-rendering: crispEdges;
 }
 
-.point {
+.point.first {
   fill: rgba(0, 191, 255, 0.1);
   stroke: rgba(0, 191, 255, 0.5);
 }
 
-.point.default {
+.point.second {
   fill: rgba(255, 109, 174, 0.1);
   stroke: rgba(255, 109, 174, 0.5);
+}
+
+.point.third {
+  fill: rgba(212,202,58, 0.1);
+  stroke: rgba(212,202,58, 0.5);
+
 }
 
 text {
@@ -31,11 +37,18 @@ text {
 
 .legend rect {
   stroke: #000;
+}
+
+.legend.first rect {
   fill: rgb(0, 191, 255);
 }
 
-.legend.default rect {
+.legend.second rect {
   fill: rgb(255, 109, 174);
+}
+
+.legend.third rect {
+  fill: rgb(212,202,58);
 }
 
 .footer {

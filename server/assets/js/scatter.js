@@ -1,4 +1,4 @@
-function scatter(chartId, loadingId, filename) {
+function scatter(chartId, loadingId, filename, labels) {
   'use strict';
 
   var margin = {top: 20, right: 20, bottom: 65, left: 65};
@@ -24,17 +24,23 @@ function scatter(chartId, loadingId, filename) {
     .scale(yScale)
     .orient('left');
 
-  var pointClass = function(d) {
+  var pointClass = function(d, i) {
+    if (Math.round(d.value) === 0) {
+      return 'point first';
+    }
     if (Math.round(d.value) === 1) {
-      return 'point default';
+      return 'point second';
     }
-    return 'point';
+    return 'point third';
   };
-  var legendClass = function(d) {
-    if (d === 'Default') {
-      return 'legend default';
+  var legendClass = function(d, i) {
+    if (i === 0) {
+      return 'legend first';
     }
-    return 'legend';
+    if (i === 1) {
+      return 'legend second';
+    }
+    return 'legend third';
   }
 
   var svg = d3.select(chartId)
@@ -89,7 +95,7 @@ function scatter(chartId, loadingId, filename) {
       .attr('cy', yMap);
 
     var legend = svg.selectAll('.legend')
-      .data(['Default', 'No Default'])
+      .data(labels)
       .enter()
       .append('g')
       .attr('class', legendClass)

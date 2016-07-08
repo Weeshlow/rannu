@@ -8,7 +8,8 @@
   var loading = $('#loading');
   var chart = $('#scatter');
   var footer = {
-    creditCard: $('#credit-card-footer')
+    creditCard: $('#credit-card-footer'),
+    iris: $('#iris-footer')
   };
 
   $('#submit').click(function() {
@@ -30,11 +31,24 @@
           return;
         }
         results.html('<p>Elapsed time: ' + resp.elapsed + ' seconds</p>');
-        scatter('#scatter', '#loading', 'credit-card.csv');
+        scatter('#scatter', '#loading', 'credit-card.csv', ['No Default', 'Default']);
         $('.footer').hide();
         footer.creditCard.show();
       });
       break;
+    case 'iris':
+      title.text('Iris');
+      $.get('/api/pca/iris/' + numWorkers, function(resp) {
+        if (resp.status !== 'ok') {
+          console.log(resp);
+          alert('Uh oh! ' + resp.message);
+          return;
+        }
+        results.html('<p>Elapsed time: ' + resp.elapsed + ' seconds</p>');
+        scatter('#scatter', '#loading', 'iris.csv', ['Setosa', 'Versicolor', 'Virginica']);
+        $('.footer').hide();
+        footer.iris.show();
+      });
     default:
       break;
     }
