@@ -36,6 +36,26 @@ type Response struct {
 	Elapsed      float64             `json:"elapsed"`
 }
 
+type sizeResponse struct {
+	Size  *pb.Size
+	Error error
+}
+
+type vectorResponse struct {
+	Vector *pb.Vector
+	Error  error
+}
+
+type matrixResponse struct {
+	Matrix *pb.Matrix
+	Error  error
+}
+
+type dataFileResponse struct {
+	DataFile *pb.DataFile
+	Error    error
+}
+
 func Listen(jobc chan *Job) {
 	go func() {
 		for {
@@ -99,12 +119,24 @@ func process(job *Job) {
 		clients[i] = pb.NewWorkerClient(conns[i])
 	}
 
+	sizec := make(chan sizeResponse)
 	var rows, cols int
 	for i := range clients {
 		dataFile := &pb.DataFile{
 			Name: fmt.Sprintf("%s-%d-%d.csv", job.Dataset, job.Workers, i+1),
 		}
-		size, err := clients[i].LoadData(context.Background(), dataFile)
+		go func() {
+			size, err := clients[i].LoadData(context.Background(), dataFile)
+			sizec <- sizeResponse{
+				Size:  size,
+				Error: err,
+			}
+		}()
+	}
+	for i := range clients {
+		sizeResp := <-sizec
+		size := sizeResp.Size
+		err := sizeResp.Error
 		if err != nil {
 			grpclog.Printf("%v.LoadData() got error %v", clients[i], err)
 			resp.Message = "Could not load data"
@@ -126,9 +158,21 @@ func process(job *Job) {
 		rows += int(size.Rows)
 	}
 
+	sumc := make(chan vectorResponse)
 	sum := matrix.Zeros(1, cols)
 	for i := range clients {
-		subVector, err := clients[i].GetSum(context.Background(), &pb.Unit{})
+		go func() {
+			vector, err := clients[i].GetSum(context.Background(), &pb.Unit{})
+			sumc <- vectorResponse{
+				Vector: vector,
+				Error:  err,
+			}
+		}()
+	}
+	for i := range clients {
+		vectorResp := <-sumc
+		subVector := vectorResp.Vector
+		err := vectorResp.Error
 		if err != nil {
 			grpclog.Printf("%v.GetSum() got error %v", clients[i], err)
 			resp.Message = "Could not get sum"
@@ -145,12 +189,24 @@ func process(job *Job) {
 		sumArray[i] /= float64(rows)
 	}
 
+	matrixc := make(chan matrixResponse)
 	mean := &pb.Vector{
 		Elements: sumArray,
 	}
 	scatter := matrix.Zeros(cols, cols)
 	for i := range clients {
-		subScatter, err := clients[i].GetScatterMatrix(context.Background(), mean)
+		go func() {
+			matrix, err := clients[i].GetScatterMatrix(context.Background(), mean)
+			matrixc <- matrixResponse{
+				Matrix: matrix,
+				Error:  err,
+			}
+		}()
+	}
+	for i := range clients {
+		matrixResp := <-matrixc
+		subScatter := matrixResp.Matrix
+		err := matrixResp.Error
 		if err != nil {
 			grpclog.Printf("%v.GetScatterMatrix() got error %v", clients[i], err)
 			resp.Message = "Could not get scatter matrix"
@@ -212,8 +268,19 @@ func process(job *Job) {
 				&pb.Vector{Elements: topVectors[1].Array()},
 			},
 		}
+		filec := make(chan dataFileResponse)
 		for i := range clients {
-			_, err := clients[i].ComputeScores(context.Background(), top)
+			go func() {
+				dataFile, err := clients[i].ComputeScores(context.Background(), top)
+				filec <- dataFileResponse{
+					DataFile: dataFile,
+					Error:    err,
+				}
+			}()
+		}
+		for i := range clients {
+			fileResp := <-filec
+			err := fileResp.Error
 			if err != nil {
 				grpclog.Printf("%v.ComputeScores() got error %v", clients[i], err)
 				resp.Message = "Could not compute scores"
