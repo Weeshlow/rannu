@@ -37,7 +37,7 @@ func (w *workerServer) LoadData(ctx context.Context, file *pb.DataFile) (*pb.Siz
 	cols := 0
 	vectors := [][]float64{}
 
-	f, err := os.Open(file.Name)
+	f, err := os.Open(fmt.Sprintf("data/%s", file.Name))
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +159,7 @@ func (w *workerServer) ComputeScores(ctx context.Context, top *pb.Matrix) (*pb.D
 		vectors[i] = vector.Transpose().Array()
 	}
 
-	in, err := os.Open(fmt.Sprintf("answers-%s", w.filename))
+	in, err := os.Open(fmt.Sprintf("data/answers-%s", w.filename))
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +189,7 @@ func (w *workerServer) ComputeScores(ctx context.Context, top *pb.Matrix) (*pb.D
 		return nil, errors.New("Inconsistent answer and vector sizes")
 	}
 
-	filename := fmt.Sprintf("projected-%s", w.filename)
+	filename := fmt.Sprintf("data/projected-%s", w.filename)
 	out, err := os.Create(filename)
 	if err != nil {
 		return nil, err

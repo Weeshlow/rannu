@@ -8,6 +8,7 @@ _obj
 _test
 vendor
 bin
+cluster/data
 
 # Architecture specific extensions/prefixes
 *.[568vq]
