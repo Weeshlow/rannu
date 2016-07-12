@@ -125,13 +125,13 @@ func process(job *Job) {
 		dataFile := &pb.DataFile{
 			Name: fmt.Sprintf("%s-%d-%d.csv", job.Dataset, job.Workers, i+1),
 		}
-		go func() {
-			size, err := clients[i].LoadData(context.Background(), dataFile)
+		go func(client pb.WorkerClient) {
+			size, err := client.LoadData(context.Background(), dataFile)
 			sizec <- sizeResponse{
 				Size:  size,
 				Error: err,
 			}
-		}()
+		}(clients[i])
 	}
 	for i := range clients {
 		sizeResp := <-sizec
@@ -161,13 +161,13 @@ func process(job *Job) {
 	sumc := make(chan vectorResponse)
 	sum := matrix.Zeros(1, cols)
 	for i := range clients {
-		go func() {
-			vector, err := clients[i].GetSum(context.Background(), &pb.Unit{})
+		go func(client pb.WorkerClient) {
+			vector, err := client.GetSum(context.Background(), &pb.Unit{})
 			sumc <- vectorResponse{
 				Vector: vector,
 				Error:  err,
 			}
-		}()
+		}(clients[i])
 	}
 	for i := range clients {
 		vectorResp := <-sumc
@@ -195,13 +195,13 @@ func process(job *Job) {
 	}
 	scatter := matrix.Zeros(cols, cols)
 	for i := range clients {
-		go func() {
-			matrix, err := clients[i].GetScatterMatrix(context.Background(), mean)
+		go func(client pb.WorkerClient) {
+			matrix, err := client.GetScatterMatrix(context.Background(), mean)
 			matrixc <- matrixResponse{
 				Matrix: matrix,
 				Error:  err,
 			}
-		}()
+		}(clients[i])
 	}
 	for i := range clients {
 		matrixResp := <-matrixc
@@ -270,13 +270,13 @@ func process(job *Job) {
 		}
 		filec := make(chan dataFileResponse)
 		for i := range clients {
-			go func() {
-				dataFile, err := clients[i].ComputeScores(context.Background(), top)
+			go func(client pb.WorkerClient) {
+				dataFile, err := client.ComputeScores(context.Background(), top)
 				filec <- dataFileResponse{
 					DataFile: dataFile,
 					Error:    err,
 				}
-			}()
+			}(clients[i])
 		}
 		for i := range clients {
 			fileResp := <-filec
