@@ -18,4 +18,4 @@ test:
 	@go test $(NOVENDOR)
 
 docker: build
-	@docker build -t rannu:latest .
+	@docker build -t rannu-server:latest .
