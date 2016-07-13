@@ -22,21 +22,21 @@ var (
 	port = flag.CommandLine.Int("addr",
 		7900, "HTTP server port")
 	addr1 = flag.CommandLine.String("addr1",
-		"127.0.0.1:10000", "Worker 1 address")
+		"worker1:7901", "Worker 1 address")
 	addr2 = flag.CommandLine.String("addr2",
-		"127.0.0.1:10001", "Worker 2 address")
+		"worker2:7901", "Worker 2 address")
 	addr3 = flag.CommandLine.String("addr3",
-		"127.0.0.1:10002", "Worker 3 address")
+		"worker3:7901", "Worker 3 address")
 	addr4 = flag.CommandLine.String("addr4",
-		"127.0.0.1:10003", "Worker 4 address")
+		"worker4:7901", "Worker 4 address")
 	addr5 = flag.CommandLine.String("addr5",
-		"127.0.0.1:10004", "Worker 5 address")
+		"worker5:7901", "Worker 5 address")
 	addr6 = flag.CommandLine.String("addr6",
-		"127.0.0.1:10005", "Worker 6 address")
+		"worker6:7901", "Worker 6 address")
 	addr7 = flag.CommandLine.String("addr7",
-		"127.0.0.1:10006", "Worker 7 address")
+		"worker7:7901", "Worker 7 address")
 	addr8 = flag.CommandLine.String("addr8",
-		"127.0.0.1:10007", "Worker 8 address")
+		"worker8:7901", "Worker 8 address")
 )
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
