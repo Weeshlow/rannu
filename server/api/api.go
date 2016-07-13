@@ -13,11 +13,13 @@ import (
 var jobc = make(chan *q.Job)
 
 // New return an multiplexer for API endpoints
-func New() http.Handler {
-	q.Listen(jobc)
+func New(addrs []string) (http.Handler, error) {
+	if err := q.Listen(addrs, jobc); err != nil {
+		return nil, err
+	}
 
 	mux := goji.NewMux()
 	mux.HandleFuncC(pat.Get("/api/pca/:dataset/:workers"), pcaHandler)
 
-	return mux
+	return mux, nil
 }

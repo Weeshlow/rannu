@@ -15,10 +15,9 @@ import (
 )
 
 var (
-	host       = "127.0.0.1"
-	basePort   = 10000
-	save       = false
+	clients    []pb.WorkerClient
 	q          = lane.NewQueue()
+	save       = false
 	processing = false
 )
 
@@ -56,7 +55,24 @@ type dataFileResponse struct {
 	Error    error
 }
 
-func Listen(jobc chan *Job) {
+func Listen(addrs []string, jobc chan *Job) error {
+	numWorkers := len(addrs)
+	conns := make([]*grpc.ClientConn, numWorkers)
+	clients = make([]pb.WorkerClient, numWorkers)
+
+	opts := []grpc.DialOption{grpc.WithInsecure()}
+
+	var err error
+	for i, addr := range addrs {
+		conns[i], err = grpc.Dial(addr, opts...)
+		if err != nil {
+			grpclog.Printf("fail to dial: %v", err)
+			return err
+		}
+
+		clients[i] = pb.NewWorkerClient(conns[i])
+	}
+
 	go func() {
 		for {
 			select {
@@ -81,47 +97,36 @@ func Listen(jobc chan *Job) {
 					grpclog.Println("Invalid job!")
 					continue
 				}
+				processing = true
 				process(job)
 				continue
 			}
 		}
 	}()
+
+	return nil
 }
 
 func process(job *Job) {
-	processing = true
-
-	grpclog.Println("Processing job")
-	startTime := time.Now()
-
 	var err error
 
 	resp := &Response{}
 
-	conns := make([]*grpc.ClientConn, job.Workers)
-	clients := make([]pb.WorkerClient, job.Workers)
-
-	opts := []grpc.DialOption{grpc.WithInsecure()}
-
-	for i := range clients {
-		addr := fmt.Sprintf("%s:%d", host, basePort+i)
-		conns[i], err = grpc.Dial(addr, opts...)
-		if err != nil {
-			grpclog.Printf("fail to dial: %v", err)
-			resp.Message = "Could not reach worker"
-			resp.Status = "error"
-			job.ResponseChannel <- resp
-			processing = false
-			return
-		}
-		defer conns[i].Close()
-
-		clients[i] = pb.NewWorkerClient(conns[i])
+	if job.Workers > len(clients) {
+		grpclog.Printf("Invalid worker number: %v > %v", job.Workers, len(clients))
+		resp.Message = "Invalid worker number"
+		resp.Status = "error"
+		job.ResponseChannel <- resp
+		processing = false
+		return
 	}
+
+	grpclog.Println("Processing job")
+	startTime := time.Now()
 
 	sizec := make(chan sizeResponse)
 	var rows, cols int
-	for i := range clients {
+	for i := 0; i < job.Workers; i++ {
 		dataFile := &pb.DataFile{
 			Name: fmt.Sprintf("%s-%d-%d.csv", job.Dataset, job.Workers, i+1),
 		}
@@ -133,7 +138,7 @@ func process(job *Job) {
 			}
 		}(clients[i])
 	}
-	for i := range clients {
+	for i := 0; i < job.Workers; i++ {
 		sizeResp := <-sizec
 		size := sizeResp.Size
 		err := sizeResp.Error
@@ -160,7 +165,7 @@ func process(job *Job) {
 
 	sumc := make(chan vectorResponse)
 	sum := matrix.Zeros(1, cols)
-	for i := range clients {
+	for i := 0; i < job.Workers; i++ {
 		go func(client pb.WorkerClient) {
 			vector, err := client.GetSum(context.Background(), &pb.Unit{})
 			sumc <- vectorResponse{
@@ -169,7 +174,7 @@ func process(job *Job) {
 			}
 		}(clients[i])
 	}
-	for i := range clients {
+	for i := 0; i < job.Workers; i++ {
 		vectorResp := <-sumc
 		subVector := vectorResp.Vector
 		err := vectorResp.Error
@@ -194,7 +199,7 @@ func process(job *Job) {
 		Elements: sumArray,
 	}
 	scatter := matrix.Zeros(cols, cols)
-	for i := range clients {
+	for i := 0; i < job.Workers; i++ {
 		go func(client pb.WorkerClient) {
 			matrix, err := client.GetScatterMatrix(context.Background(), mean)
 			matrixc <- matrixResponse{
@@ -203,7 +208,7 @@ func process(job *Job) {
 			}
 		}(clients[i])
 	}
-	for i := range clients {
+	for i := 0; i < job.Workers; i++ {
 		matrixResp := <-matrixc
 		subScatter := matrixResp.Matrix
 		err := matrixResp.Error
@@ -269,7 +274,7 @@ func process(job *Job) {
 			},
 		}
 		filec := make(chan dataFileResponse)
-		for i := range clients {
+		for i := 0; i < job.Workers; i++ {
 			go func(client pb.WorkerClient) {
 				dataFile, err := client.ComputeScores(context.Background(), top)
 				filec <- dataFileResponse{
@@ -278,7 +283,7 @@ func process(job *Job) {
 				}
 			}(clients[i])
 		}
-		for i := range clients {
+		for i := 0; i < job.Workers; i++ {
 			fileResp := <-filec
 			err := fileResp.Error
 			if err != nil {
