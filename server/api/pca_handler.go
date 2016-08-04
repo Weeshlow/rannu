@@ -17,6 +17,13 @@ import (
 func pcaHandler(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	dataset := pat.Param(ctx, "dataset")
 	workers, err := strconv.Atoi(pat.Param(ctx, "workers"))
+	var standardize bool
+	if pat.Param(ctx, "standardize") == "true" {
+		standardize = true
+	} else {
+		standardize = false
+	}
+	log.Println(dataset, workers, standardize)
 	if err != nil {
 		log.Printf("Could not parse workers param: %s", pat.Param(ctx, "workers"))
 		http.Error(w, "Could not parse workers param", http.StatusInternalServerError)
@@ -32,6 +39,7 @@ func pcaHandler(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	job := &q.Job{
 		Dataset:         dataset,
 		Workers:         workers,
+		Standardize:     standardize,
 		ResponseChannel: respc,
 	}
 	jobc <- job

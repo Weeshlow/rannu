@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"math"
 	"net"
 	"os"
 	"strconv"
@@ -30,6 +31,8 @@ type workerServer struct {
 	matrix   *matrix.DenseMatrix
 }
 
+// Load Data loads a CSV file into a matrix and returns the size
+// of that matrix
 func (w *workerServer) LoadData(ctx context.Context, file *pb.DataFile) (*pb.Size, error) {
 	grpclog.Printf("Processing %s...", file.Name)
 	w.filename = file.Name
@@ -78,6 +81,7 @@ func (w *workerServer) LoadData(ctx context.Context, file *pb.DataFile) (*pb.Siz
 	return size, nil
 }
 
+// GetSum returns a vector with the sum of each column as an element
 func (w *workerServer) GetSum(ctx context.Context, unit *pb.Unit) (*pb.Vector, error) {
 	if w.matrix == nil {
 		return nil, errors.New("No matrix available")
@@ -98,7 +102,37 @@ func (w *workerServer) GetSum(ctx context.Context, unit *pb.Unit) (*pb.Vector, e
 	return sum, nil
 }
 
-func (w *workerServer) GetScatterMatrix(ctx context.Context, mean *pb.Vector) (*pb.Matrix, error) {
+// GetVariance receives a mean vector and returns a vector, each element of
+// which consits of the sum of the squares of each column element minus the mean
+func (w *workerServer) GetVariance(ctx context.Context, mean *pb.Vector) (*pb.Vector, error) {
+	if w.matrix == nil {
+		return nil, errors.New("No matrix available")
+	}
+	variance := &pb.Vector{
+		Elements: make([]float64, w.matrix.Cols()),
+	}
+
+	for i := range variance.Elements {
+		col := w.matrix.GetColVector(i).Transpose().Array()
+		for _, x := range col {
+			variance.Elements[i] += math.Pow(x-mean.Elements[i], 2)
+		}
+	}
+
+	return variance, nil
+}
+
+// GetScatterMatrix receives mean and standard deviation vectors as a matrix
+// and uses those to standardize the elements of the matrix before returning
+// the sum of the outer product of the rows
+func (w *workerServer) GetScatterMatrix(ctx context.Context, meanAndSD *pb.Matrix) (*pb.Matrix, error) {
+	if len(meanAndSD.Elements) != 2 {
+		return nil, errors.New("Invalid matrix. Need mean and standard deviation rows.")
+	}
+
+	mean := meanAndSD.Elements[0]
+	sd := meanAndSD.Elements[1]
+
 	numRows, numCols := w.matrix.GetSize()
 
 	rows := make([][]float64, numRows)
@@ -111,6 +145,13 @@ func (w *workerServer) GetScatterMatrix(ctx context.Context, mean *pb.Vector) (*
 	err := w.matrix.SubtractDense(meanMatrix)
 	if err != nil {
 		return nil, err
+	}
+
+	for i := 0; i < numRows; i++ {
+		for j := 0; j < numCols; j++ {
+			val := w.matrix.Get(i, j)
+			w.matrix.Set(i, j, val/sd.Elements[j])
+		}
 	}
 
 	scatter := matrix.Zeros(numCols, numCols)
@@ -142,6 +183,9 @@ func (w *workerServer) GetScatterMatrix(ctx context.Context, mean *pb.Vector) (*
 	return mat, nil
 }
 
+// ComputeScores receives a matrix of top principal component vectors and
+// projects its rows onto that subspace before returning the projection along
+// with the classifiation of each row
 func (w *workerServer) ComputeScores(ctx context.Context, top *pb.Matrix) (*pb.DataFile, error) {
 	k := len(top.Elements)
 	topVectors := make([][]float64, k)

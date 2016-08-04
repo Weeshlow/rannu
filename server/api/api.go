@@ -19,7 +19,7 @@ func New(addrs []string) (http.Handler, error) {
 	}
 
 	mux := goji.NewMux()
-	mux.HandleFuncC(pat.Get("/api/pca/:dataset/:workers"), pcaHandler)
+	mux.HandleFuncC(pat.Get("/api/pca/:dataset/:workers/:standardize"), pcaHandler)
 
 	return mux, nil
 }

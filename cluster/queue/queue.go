@@ -24,15 +24,17 @@ var (
 type Job struct {
 	Dataset         string
 	Workers         int
+	Standardize     bool
 	ResponseChannel chan *Response
 }
 
 type Response struct {
-	Status       string              `json:"status"`
-	Message      string              `json:"message"`
-	Eigenvalues  []float64           `json:"eigenvalues"`
-	Eigenvectors *matrix.DenseMatrix `json:"eigenvectors"`
-	Elapsed      float64             `json:"elapsed"`
+	Status          string      `json:"status"`
+	Message         string      `json:"message"`
+	Eigenvalues     []float64   `json:"eigenvalues"`
+	Eigenvectors    [][]float64 `json:"eigenvectors"`
+	PercentVariance float64     `json:"percentVariance"`
+	Elapsed         float64     `json:"elapsed"`
 }
 
 type sizeResponse struct {
@@ -55,6 +57,9 @@ type dataFileResponse struct {
 	Error    error
 }
 
+// Listen receives the worker addresses and a job channel
+// After starting the workers it adds incoming jobs to a queue
+// and sets up a ticker to process those jobs sequentially
 func Listen(addrs []string, jobc chan *Job) error {
 	numWorkers := len(addrs)
 	conns := make([]*grpc.ClientConn, numWorkers)
@@ -198,10 +203,58 @@ func process(job *Job) {
 	mean := &pb.Vector{
 		Elements: sumArray,
 	}
+
+	var sdArray []float64
+	if job.Standardize {
+		variancec := make(chan vectorResponse)
+		sdSum := matrix.Zeros(1, cols)
+		for i := 0; i < job.Workers; i++ {
+			go func(client pb.WorkerClient) {
+				vector, err := client.GetVariance(context.Background(), mean)
+				variancec <- vectorResponse{
+					Vector: vector,
+					Error:  err,
+				}
+			}(clients[i])
+		}
+		for i := 0; i < job.Workers; i++ {
+			vectorResp := <-variancec
+			varianceVector := vectorResp.Vector
+			err := vectorResp.Error
+			if err != nil {
+				grpclog.Printf("%v.GetVariance() got error %v", clients[i], err)
+				resp.Message = "Could not get variance"
+				resp.Status = "error"
+				job.ResponseChannel <- resp
+				processing = false
+				return
+			}
+			subSum := matrix.MakeDenseMatrixStacked([][]float64{varianceVector.Elements})
+			sdSum.Add(subSum)
+		}
+		sdArray = sdSum.Array()
+		for i := range sdArray {
+			sdArray[i] = math.Sqrt(sdArray[i] / float64(rows))
+		}
+	} else {
+		sdArray = make([]float64, cols)
+		for i := range sdArray {
+			sdArray[i] = 1
+		}
+	}
+
+	sd := &pb.Vector{
+		Elements: sdArray,
+	}
+
+	meanAndSD := &pb.Matrix{
+		Elements: []*pb.Vector{mean, sd},
+	}
+
 	scatter := matrix.Zeros(cols, cols)
 	for i := 0; i < job.Workers; i++ {
 		go func(client pb.WorkerClient) {
-			matrix, err := client.GetScatterMatrix(context.Background(), mean)
+			matrix, err := client.GetScatterMatrix(context.Background(), meanAndSD)
 			matrixc <- matrixResponse{
 				Matrix: matrix,
 				Error:  err,
@@ -245,11 +298,13 @@ func process(job *Job) {
 		return
 	}
 	resp.Eigenvalues = eigenvaluesMatrix.DiagonalCopy()
-	resp.Eigenvectors = eigenvectors
+	resp.Eigenvectors = eigenvectors.Arrays()
 
+	var sumValues float64
 	topValues := []float64{-math.MaxFloat64, -math.MaxFloat64}
 	topVectors := make([]*matrix.DenseMatrix, 2)
 	for i, eigenvalue := range resp.Eigenvalues {
+		sumValues += eigenvalue
 		if eigenvalue < topValues[1] {
 			continue
 		}
@@ -265,6 +320,8 @@ func process(job *Job) {
 	}
 	fmt.Println("top 1", topValues[0], topVectors[0])
 	fmt.Println("top 2", topValues[1], topVectors[1])
+
+	resp.PercentVariance = 100 * (topValues[0] + topValues[1]) / sumValues
 
 	if save {
 		top := &pb.Matrix{

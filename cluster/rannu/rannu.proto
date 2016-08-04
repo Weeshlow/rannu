@@ -7,7 +7,9 @@ service Worker {
 
     rpc GetSum(Unit) returns (Vector) {}
 
-    rpc GetScatterMatrix(Vector) returns (Matrix) {}
+    rpc GetVariance(Vector) returns (Vector) {}
+
+    rpc GetScatterMatrix(Matrix) returns (Matrix) {}
 
     rpc ComputeScores(Matrix) returns (DataFile) {}
 }
