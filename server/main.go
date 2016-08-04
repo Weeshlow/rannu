@@ -40,7 +40,46 @@ var (
 )
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
-	err := tmpl.Execute(w, nil)
+	ctx := struct {
+		IrisFeatures       []string
+		CreditCardFeatures []string
+	}{
+		[]string{"Sepal Length (cm)", "Sepal Width (cm)", "Petal Length (cm)", "Petal Width (cm)"},
+		[]string{
+			"Amount of Credit (NT dollars)",
+			"Gender: Male (Boolean)",
+			"Gender: Female (Boolean)",
+			"Education: Graduate School (Boolean)",
+			"Education: University (Boolean)",
+			"Education: High School (Boolean)",
+			"Education: Other (Boolean)",
+			"Marital Status: Married (Boolean)",
+			"Marital Status: Single (Boolean)",
+			"Marital Status: Other (Boolean)",
+			"Age (Years)",
+			"History of Past Payment: Sep, 2005 (Months Delayed)",
+			"History of Past Payment: Aug, 2005 (Months Delayed)",
+			"History of Past Payment: Jul, 2005 (Months Delayed)",
+			"History of Past Payment: Jun, 2005 (Months Delayed)",
+			"History of Past Payment: May, 2005 (Months Delayed)",
+			"History of Past Payment: Apr, 2005 (Months Delayed)",
+			"Amount of Bill Statement: Sep, 2005 (NT dollar)",
+			"Amount of Bill Statement: Aug, 2005 (NT dollar)",
+			"Amount of Bill Statement: Jul, 2005 (NT dollar)",
+			"Amount of Bill Statement: Jun, 2005 (NT dollar)",
+			"Amount of Bill Statement: May, 2005 (NT dollar)",
+			"Amount of Bill Statement: Apr, 2005 (NT dollar)",
+			"Amount of Previous Payment: Sep, 2005 (NT dollar)",
+			"Amount of Previous Payment: Aug, 2005 (NT dollar)",
+			"Amount of Previous Payment: Jul, 2005 (NT dollar)",
+			"Amount of Previous Payment: Jun, 2005 (NT dollar)",
+			"Amount of Previous Payment: May, 2005 (NT dollar)",
+			"Amount of Previous Payment: Apr, 2005 (NT dollar)",
+		},
+	}
+
+	err := tmpl.Execute(w, ctx)
+
 	if err != nil {
 		log.Println("Failed to execute template:", err)
 		http.Error(w, "Failed to execute template", http.StatusInternalServerError)

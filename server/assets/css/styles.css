@@ -51,7 +51,7 @@ text {
   fill: rgb(212,202,58);
 }
 
-.footer {
+.table, .footer {
   display: none;
 }
 
