@@ -4,7 +4,7 @@ version=0.1.0
 
 NOVENDOR := $(shell glide novendor)
 
-build: clean lint
+build: clean
 	@CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o ./bin/worker ./worker
 
 clean:

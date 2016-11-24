@@ -21,6 +21,7 @@ var (
 	processing = false
 )
 
+// Job represents a request from the front-end
 type Job struct {
 	Dataset         string
 	Workers         int
@@ -28,6 +29,7 @@ type Job struct {
 	ResponseChannel chan *Response
 }
 
+// Response represents what is returned to the front-end
 type Response struct {
 	Status          string      `json:"status"`
 	Message         string      `json:"message"`
